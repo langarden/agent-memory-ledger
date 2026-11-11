@@ -1,0 +1,10 @@
+{
+  "risk_redline": {
+    "hard": true,
+    "note": "permanent rigid rule: never decay, archive, or filter"
+  },
+  "compliance_minimum": {
+    "hard": true,
+    "note": "mandatory lookup on every retrieval"
+  }
+}

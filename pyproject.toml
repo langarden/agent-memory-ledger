@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-memory-ledger"
+version = "0.1.0"
+description = "A verifiable memory layer for AI agents: WAL, hash-chained trail, recycle bin, conflict ledger, write lock, hard rules (research prototype / AI-assisted development)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name = "agent-memory-ledger maintainers", email = "2307788504@qq.com"}]
+keywords = ["agent", "memory", "mcp", "audit", "verifiable", "llm", "wal"]
+
+[project.urls]
+Homepage = "https://gitcode.com/gcw_MKhSyoGN/agent-memory-ledger"
+
+[tool.setuptools.packages.find]
+include = ["aml*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
