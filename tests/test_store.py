@@ -61,6 +61,20 @@ class MemoryStoreTests(unittest.TestCase):
         self.assertTrue(ok)
         self.assertGreaterEqual(total, 2)
 
+    def test_sensitive_payload_sanitized_by_default(self):
+        # invariant #7: raw secret must never be persisted
+        self.store.put({"layer": "core", "key": "sec", "payload": {"password": "p@ss", "x": 1}})
+        rec = self.store.get("core", "sec")
+        self.assertNotIn("p@ss", str(rec["payload"]))
+        self.assertIn("REDACTED", str(rec["payload"]))
+
+    def test_sanitize_false_optout_allows_raw(self):
+        # explicit opt-out is available for callers who own classification
+        self.store.put({"layer": "core", "key": "raw", "payload": {"note": "keep-me"},
+                        "sanitize": False})
+        rec = self.store.get("core", "raw")
+        self.assertEqual(rec["payload"]["note"], "keep-me")
+
 
 if __name__ == "__main__":
     unittest.main()

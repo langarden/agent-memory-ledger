@@ -5,7 +5,7 @@ import os
 import time
 
 from .chain import HashChain
-from .security import digest
+from .security import digest, sanitize
 from .wal import WalLog
 
 LAYERS = ("draft", "hot", "core", "archive")
@@ -60,8 +60,11 @@ class MemoryStore:
         meta = dict(record.get("meta") or {})
         meta.setdefault("source", source)
 
-        # pre-check: sensitive payload is reduced to hash before storing
-        safe_payload = payload
+        # invariant #7: zero sensitive persistence. By default the payload is
+        # sanitized (secrets redacted / hashed) BEFORE storage, so raw secrets
+        # never hit disk. Callers that genuinely need raw payloads may pass
+        # sanitize=False explicitly, but must then own the data-classification.
+        safe_payload = sanitize(payload) if record.get("sanitize", True) else payload
         rec_id = self.wal.append(
             {"op": "put", "layer": layer, "key": key, "payload_hash": payload_hash, "ts": time.time()}
         )
