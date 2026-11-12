@@ -1,7 +1,15 @@
 # agent-memory-ledger（中文）
 
+
 > **AI 智能体的可验证记忆层** —— 先写日志、哈希链留痕、软删除回收站、冲突台账、
 > 写入锁、永久刚性规则，全部 **fail-closed（故障即拒绝）**。
+
+```bash
+pip install agent-memory-ledger          # 零依赖，Python 3.9+
+```
+
+<a href="https://gitcode.com/gcw_MKhSyoGN/agent-memory-ledger"><img src="https://img.shields.io/badge/GitCode-gcw_MKhSyoGN%2Fagent-memory-ledger-blue" alt="GitCode"></a>
+<a href="https://github.com/langarden/agent-memory-ledger"><img src="https://img.shields.io/badge/GitHub-langarden%2Fagent-memory-ledger-black" alt="GitHub"></a>
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)

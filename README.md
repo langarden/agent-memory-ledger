@@ -4,11 +4,18 @@
 > trail, soft-delete recycle bin, conflict ledger, write locks and permanent
 > rigid rules, with a **fail-closed** posture.
 
+```bash
+pip install agent-memory-ledger          # zero deps, Python 3.9+
+```
+
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 ![Tests](https://img.shields.io/badge/tests-65%20passed-green)
 ![Deps](https://img.shields.io/badge/runtime%20deps-0-green)
 ![Status](https://img.shields.io/badge/status-research%20prototype-orange)
+
+<a href="https://gitcode.com/gcw_MKhSyoGN/agent-memory-ledger"><img src="https://img.shields.io/badge/GitCode-gcw_MKhSyoGN%2Fagent-memory-ledger-blue" alt="GitCode"></a>
+<a href="https://github.com/langarden/agent-memory-ledger"><img src="https://img.shields.io/badge/GitHub-langarden%2Fagent-memory-ledger-black" alt="GitHub"></a>
 
 [中文版](docs/README.zh-CN.md) · *Research prototype / AI-assisted development.*
 
