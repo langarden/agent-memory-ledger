@@ -30,7 +30,8 @@ class HashChain:
     def _count(self):
         if not os.path.exists(self.path):
             return 0
-        return sum(1 for _ in open(self.path, encoding="utf-8"))
+        with open(self.path, encoding="utf-8") as f:
+            return sum(1 for _ in f)
 
     def append(self, payload):
         """Append one item. Returns the stored record dict."""
@@ -75,7 +76,8 @@ class HashChain:
     def tamper(self, index, new_payload):
         """Rewrite a record's payload WITHOUT updating its hash (for tamper tests)."""
         with self._lock:
-            lines = open(self.path, encoding="utf-8").read().splitlines()
+            with open(self.path, encoding="utf-8") as f:
+                lines = f.read().splitlines()
             rec = json.loads(lines[index])
             rec["payload"] = new_payload  # hash left stale -> verify must fail
             lines[index] = json.dumps(rec, ensure_ascii=False)
