@@ -99,7 +99,9 @@ class RecycleBin:
         return certs
 
     def _write_certificate(self, cert):
-        line = json.dumps(cert, ensure_ascii=False)
+        # canonical JSON: sort_keys so any machine produces the identical
+        # byte string; a digest-verifiable certificate format (expert #7).
+        line = json.dumps(cert, sort_keys=True, ensure_ascii=False)
         path = os.path.join(self.erasure_dir, "certificates.jsonl")
         with open(path, "a", encoding="utf-8") as f:
             f.write(line + "\n")

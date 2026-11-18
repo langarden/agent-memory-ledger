@@ -1,0 +1,24 @@
+---
+name: Feature request
+title: "[Feature] "
+labels: enhancement
+---
+
+## Problem / use case
+
+<!-- What are you trying to do that aml can't do today? -->
+
+## Proposed behavior / API
+
+```python
+# sketch the API or config you'd like
+```
+
+## Priority & motivation
+
+- Who needs this and how urgent: (e.g. compliance deadline, production block,
+  nice-to-have)
+- If related to compliance (EU AI Act / GDPR), say which article.
+
+## Alternatives considered
+<!-- What workarounds did you try? -->

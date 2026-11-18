@@ -8,6 +8,12 @@
 pip install agent-memory-ledger          # zero deps, Python 3.9+
 ```
 
+> **Release policy**: until a first external-user validation window closes, PyPI
+> releases are published as **pre-release** (`==0.2.0rc1` etc.), not `latest`.
+> Pre-release builds are suitable for prototype validation, **not** for
+> processing sensitive data. See `docs/performance.md` and
+> `docs/compliance.md` before choosing durability/backends.
+
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 ![Tests](https://img.shields.io/badge/tests-79%20passed-green)
@@ -24,6 +30,20 @@ pip install agent-memory-ledger          # zero deps, Python 3.9+
 Most agent memory stores help you **remember**. This one also helps you
 **prove** that nothing was recorded wrong, deleted silently, or tampered with —
 an **audit-grade memory** for agents that need to be accountable.
+
+## Known limitations (read first)
+
+> ⚠️ v0.2 is a research prototype. Read this before filing an issue.
+
+| # | Limitation | Effect / guidance |
+|:--|:--|:--|
+| 1 | **Single-process writer** per storage directory | enforced by an exclusive lock; second writer raises `ProcessContentionError` with guidance. Recommended: one process, one directory (or per-process `namespace=`). |
+| 2 | **No NFS / network shares** as storage backend | atomic rename is unreliable there; local disk only. |
+| 3 | **File-store capacity** | tuned for ≤ ~10k records per JSON file; SQLite backend on roadmap. |
+| 4 | **No read-side access control** | `namespace=` is data isolation, NOT a security boundary; add OS/object-store ACLs for multi-tenant production. |
+| 5 | **Not a legal forensics tool** | erasure certificates / hash chains are internal integrity proofs, not court-grade evidence (see `docs/compliance.md`). |
+| 6 | **`durability="strict"` is slow** | fsync per write; use it for audit scenarios, not high-QPS chat agents. See `docs/performance.md`. |
+| 7 | **Chain `verify()` is O(n)** | fine ≤ ~100k entries; segmented/snapshot verifier on roadmap. |
 
 ## Why another memory library?
 
@@ -165,12 +185,21 @@ aml/
   content-level read access control; provenance chain (which prompt / tool
   call produced a memory); configurable retention tiers + auto-archive; export
   of an independent audit-event stream.
-- **Scalability**: SQLite backend (WAL mode, transactional, indexed) for
-  multi-process write and >10k-record stores; segmented/snapshot chain
-  verification for very large trails.
-- **Ecosystem**: LangGraph/LangChain `Checkpointer`-compatible binding (drop-in
-  audited storage plug-in); MCP server (`memory.read` / `memory.write`);
-  remote sync with a verifiable append-only chain.
+- **Scalability — SQLite backend (architecture constraint)**: when adding the
+  SQLite store, **do not re-implement the JSON-file hash-chain at file level**.
+  SQLite already provides WAL + transactions + row locks; the hash-chain
+  semantic should be pushed down to **row level** rather than stacking a second
+  WAL on top. Two nested WAL layers add avoidable complexity and consistency
+  risk.
+- **Ecosystem — LangGraph/LangChain `Checkpointer` binding (contract
+  boundary)**: the compatibility layer stores LangGraph checkpoints **as aml
+  payloads** and aml owns the integrity/audit of those writes. It does **not**
+  change LangGraph checkpoint semantics; LangGraph-internal bugs / checkpoint
+  overwrites are outside aml's guarantees. A **separate demo repository**
+  (not the main repo) will host the LangGraph integration demo + compliance
+  export scripts, keeping the main repo clean so users can clone-and-run.
+- **MCP server** (`memory.read` / `memory.write`); **remote sync** with a
+  verifiable append-only chain.
 
 ## Contributing / Security / License / AI disclosure
 

@@ -1,0 +1,35 @@
+---
+name: Bug report
+title: "[Bug] "
+labels: bug
+---
+
+Thanks for reporting! To help us reproduce quickly, please fill in the
+runtime context — most aml issues come from a specific deployment shape.
+
+## Environment context (required)
+
+- **durability mode**: `strict` / `normal` / `fast` / default（don't know）
+- **storage backend**: local disk / NFS / network share / other
+- **concurrency**: single process / multiple processes (how many) / threads
+- **Python version** & OS:
+- **aml version**: `python -c "import aml; print(aml.__version__)"`
+
+## Bug description
+
+<!-- What happened? Expected vs actual behavior. -->
+
+## Steps to reproduce
+
+```python
+# minimal repro (keep it small)
+```
+
+## Expected vs actual
+
+<!-- paste outputs; if it raised, include the full traceback -->
+
+## Logs / artifacts (optional)
+
+<!-- If files were involved (wal.log, chain.jsonl, certificates.jsonl), describe
+     their state — do NOT paste secrets -->

@@ -224,6 +224,32 @@ class WalCrashSimulationTests(unittest.TestCase):
         finally:
             store.close()
 
+    def test_lsn_continuous_after_wal_tail_loss(self):
+        """Expert #5: after WAL tail truncation + partial replay, chain LSN
+        stays continuous and does not roll back or skip."""
+        store = MemoryStore(self.base, durability="strict")
+        try:
+            store.put({"layer": "core", "key": "a", "payload": 1})
+            store.put({"layer": "core", "key": "b", "payload": 2})
+            # tail WAL record is lost before it could be reclaimed (crash).
+            # Chain still holds both records (chain append happens after WAL),
+            # so recovery must not invent or drop chain links.
+            store.wal.truncate_last()
+            recs, bad = store.wal.read_all()
+            self.assertEqual(len(recs), 1)   # only the surviving WAL record
+            self.assertGreaterEqual(bad, 0)
+            ok, _, total = store.chain.verify()
+            self.assertTrue(ok)              # chain stays verifiable
+            # continue writing; LSN must continue from existing head, no duplicate/skip
+            store.put({"layer": "core", "key": "c", "payload": 3})
+            ok, _, total = store.chain.verify()
+            self.assertTrue(ok)
+            with open(store.chain.path, encoding="utf-8") as f:
+                lsns = [json.loads(line)["lsn"] for line in f if line.strip()]
+            self.assertEqual(lsns, list(range(len(lsns))))  # 0,1,2 — gap-free
+        finally:
+            store.close()
+
 
 if __name__ == "__main__":
     unittest.main()

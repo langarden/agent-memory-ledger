@@ -1,0 +1,27 @@
+---
+name: Compliance / audit question
+title: "[Compliance] "
+labels: compliance
+---
+
+> Read first: `docs/compliance.md` and `RETAIN_ERASE_POLICY.md` —
+> this library is a technical substrate, not a full compliance program.
+
+## Question
+
+<!-- What are you trying to demonstrate or satisfy? -->
+
+## Context
+
+- Regulatory framework in scope: EU AI Act Art.12/13 · GDPR Art.17 · SOX ·
+  HIPAA · other (specify)
+- Your deployment: single-process? storage location? who operates it?
+
+## What you've already checked
+
+<!-- e.g. "I read compliance.md; I see v0.3 roadmap covers read-access
+     control — but my deadline is next quarter." -->
+
+## Expected answer format (optional)
+
+<!-- A statement, a code snippet, a doc change, or a roadmap commitment? -->

@@ -2,6 +2,20 @@
 
 > 版本：v1.0（2026-11-18）｜面向第三方审计工具/合规存档的字段标准化
 
+## 0. 摘要算法与序列化规则（哈希可跨机器验证）
+
+- **摘要算法**：SHA-256（`hashlib.sha256`）。
+- **规范化序列化（canonical JSON）**：所有参与哈希/签名的对象一律
+  `json.dumps(obj, sort_keys=True, ensure_ascii=False)`（key 排序、UTF-8、无多余空格），
+  保证同一对象在任何机器/语言上产生完全相同的字节串，从而哈希一致。
+- **哈希输入规则**：
+  - WAL `rec_id` = SHA256(规范化 `op|key|layer|payload_hash|ts` 子集 JSON).hexdigest()[:16]
+  - 链 `hash` = SHA256(规范化 payload JSON + `"|"` + prev_hash)
+  - 删除证书 `payload_digest` = SHA256(规范化原始 payload JSON)
+- ⚠️ **换算法警告（破坏性操作）**：本库默认固定 SHA-256。更换哈希算法会
+  使全部历史链/证书校验失效（旧记录无法再 verify），属破坏性变更，仅可在
+  显式迁移（重建链）时进行；文档会随版本注明当前算法。
+
 ## 1. 三种日志类型
 
 | 类型 | 文件位置 | 内容 | 目的 |

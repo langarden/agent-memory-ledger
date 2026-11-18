@@ -36,6 +36,11 @@
 | 多租户隔离 | ✅ namespace 物理隔离 | SQLite 后端后强化 |
 | 删除证书导出 | ✅ v0.2 | 归档格式 | 
 
+> ⚠️ **namespace 边界（专家评审 #3/#8）**：`namespace=` 提供的是**数据隔离/
+> 避免 key 冲突**，**不是操作系统级权限隔离**。同一机器上任何有文件读权限的
+> 进程都能读取其他 namespace 的内容；多租户生产场景必须在库外叠加
+> OS 权限 / 对象存储 ACL / 容器隔离作为真正的访问控制兜底。 
+
 **结论**：v0.2 = **可验证记忆存储层**（verifiable memory store）；达到"audit-grade 全流程治理"需 v0.3 补齐读取侧访问控制、provenance、Retention 策略、决策轨迹。宣传口径以 v0.2 为"可验证存储"，避免"审计级"字样过度前置。
 
 ## 5. 免责声明（Referenced by README）

@@ -28,8 +28,17 @@ except ImportError:  # POSIX
     _LOCK_IMPL = "fcntl"
 
 
+class AtomicWriteError(OSError):
+    """Raised when an atomic write fails (disk full, permission, rename)."""
+
+
 def atomic_write(path, data, encoding="utf-8"):
-    """Atomically replace `path` with `data` (string)."""
+    """Atomically replace `path` with `data` (string).
+
+    Raises:
+        AtomicWriteError — with a distinct message for disk-full / permission /
+        unsupported-rename cases, so callers can surface a helpful error.
+    """
     directory = os.path.dirname(path) or "."
     fd, tmp = tempfile.mkstemp(prefix=".aml_tmp_", dir=directory)
     try:
@@ -37,13 +46,26 @@ def atomic_write(path, data, encoding="utf-8"):
             f.write(data)
             f.flush()
             os.fsync(f.fileno())
-        os.replace(tmp, path)
-    except Exception:
         try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
+            os.replace(tmp, path)
+        except OSError as e:
+            # e.g. NFS / network share without atomic rename support
+            raise AtomicWriteError(
+                "atomic rename failed for %s (is this a network/NFS share? "
+                "network shares are not recommended as aml storage): %s" % (path, e)
+            ) from e
+    except OSError as e:
+        # disk full (ENOSPC) / permission (EACCES) / etc.
+        raise AtomicWriteError(
+            "atomic write failed for %s (%s). Check disk space and permissions." % (path, e)
+        ) from e
+    finally:
+        # best-effort cleanup of the temp file so no *.aml_tmp_ garbage stays
+        if os.path.exists(tmp):
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
 
 
 class FileLock:
@@ -123,7 +145,12 @@ def try_exclusive_lock(path, who="writer"):
     except OSError as e:
         if e.errno in (errno.EACCES, errno.EAGAIN, errno.EWOULDBLOCK, errno.EDEADLK):
             raise ProcessContentionError(
-                "another process holds the exclusive lock; role=%s, lock=%s" % (who, path)
+                "同一存储目录只允许一个写进程 (one writer per storage dir); "
+                "role=%s, lock=%s. If you need concurrent processes, give each "
+                "process its own namespace= or directory, or add your own "
+                "queueing/retry in the calling layer (the library deliberately "
+                "does NOT auto-retry, to preserve fail-closed semantics)."
+                % (who, path)
             ) from e
         raise
     return lock

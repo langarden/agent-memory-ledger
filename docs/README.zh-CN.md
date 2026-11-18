@@ -8,6 +8,10 @@
 pip install agent-memory-ledger          # 零依赖，Python 3.9+
 ```
 
+> **发布策略**：外部种子用户验证窗口结束前，PyPI 以**预发布版**发布（`==0.2.0rc1` 等），
+> 不作为 `latest`。预发布版适合原型验证，**不建议**用于处理敏感数据。
+> 选型前请阅读 `docs/performance.md` 与 `docs/compliance.md`。
+
 <a href="https://gitcode.com/gcw_MKhSyoGN/agent-memory-ledger"><img src="https://img.shields.io/badge/GitCode-gcw_MKhSyoGN%2Fagent-memory-ledger-blue" alt="GitCode"></a>
 <a href="https://github.com/langarden/agent-memory-ledger"><img src="https://img.shields.io/badge/GitHub-langarden%2Fagent-memory-ledger-black" alt="GitHub"></a>
 
@@ -23,6 +27,20 @@ pip install agent-memory-ledger          # 零依赖，Python 3.9+
 
 大多数智能体记忆库帮你"**记得住**"；agent-memory-ledger 还帮你"**证明没记错、删得掉、
 改得动、查得到**"——对需要被追责的智能体，提供**审计级记忆**。
+
+## 已知限制（请先读）
+
+> ⚠️ v0.2 为研究原型。报 issue 前先看此表。
+
+| # | 限制 | 影响 / 指引 |
+|:--|:--|:--|
+| 1 | 每存储目录**单进程写** | 独占锁强制，第二位写者抛 `ProcessContentionError`（含指引）。推荐一进程一目录，或每进程独立 `namespace=` |
+| 2 | **不支持 NFS/网络共享盘** | 原子 rename 在其上不可靠，请用本地磁盘 |
+| 3 | 文件存储容量上限 | 单 JSON 文件 ≤ 约 1 万条记忆；SQLite 后端在路标上 |
+| 4 | **无读取侧权限控制** | `namespace=` 是数据隔离，**不是安全边界**；多租户生产需外层 OS 权限/ACL 兜底 |
+| 5 | **非司法取证工具** | 删除证书/哈希链是内部完整性证明，不等同法庭证据（见 `docs/compliance.md`） |
+| 6 | `durability="strict"` 慢 | 每条 fsync，仅适合审计场景，不适合高并发对话 Agent（见 `docs/performance.md`） |
+| 7 | 链 `verify()` 为 O(n) | 约 10 万条以内够用；分段/快照校验在路标上 |
 
 ## 为什么需要它
 
