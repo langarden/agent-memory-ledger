@@ -6,3 +6,5 @@ build/
 dist/
 .env
 .venv/
+demo_out.txt
+*_TODO.md
