@@ -208,6 +208,12 @@ aml/
 - **MCP server** (`memory.read` / `memory.write`); **remote sync** with a
   verifiable append-only chain.
 
+## Docs
+
+- [docs/tutorial-langgraph-checkpointer.md](docs/tutorial-langgraph-checkpointer.md)
+  — Tutorial: an auditable memory for LangGraph (drop-in Checkpointer backed by
+  aml, real runnable demo, 3 production pitfalls).
+
 ## Contributing / Security / License / AI disclosure
 
 - [CONTRIBUTING.md](CONTRIBUTING.md) — fail-closed first, no new deps,
