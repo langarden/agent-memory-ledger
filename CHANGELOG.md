@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.0rc1 (2026-11-18)
+
+- **PyPI distribution renamed to `agent-audit-memory`** — the plain
+  `agent-memory-ledger` name was already taken on PyPI by an unrelated project
+  (first upload 2026-07-14); the rename also follows the naming-review
+  recommendation: `audit` communicates the value and avoids the "ledger /
+  blockchain" association. Repo name, `import aml`, CLI unchanged.
+
 ## v0.2.0 (2026-11-18)
 
 Pre-release expert review remediation (data-consistency + compliance accuracy):

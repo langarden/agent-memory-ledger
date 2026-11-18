@@ -5,13 +5,15 @@
 > rigid rules, with a **fail-closed** posture.
 
 ```bash
-pip install frt-agent-memory-ledger    # zero deps, Python 3.9+
+pip install agent-audit-memory    # zero deps, Python 3.9+
 ```
 
 > **PyPI name note**: on PyPI this package is published as
-> `frt-agent-memory-ledger` (the plain name `agent-memory-ledger` was taken on
-> PyPI by an unrelated project; the `frt-` prefix matches the family brand).
-> The repo, import path (`import aml`), CLI and everything else are unchanged.
+> `agent-audit-memory` — the earlier `agent-memory-ledger` name was already
+> taken on PyPI by an unrelated project, and the rename also follows the
+> naming review recommendation: `audit` communicates the actual value
+> (auditable memory) and avoids the "ledger/blockchain" association. The repo,
+> import path (`import aml`), CLI and everything else are unchanged.
 
 > **Release policy**: until a first external-user validation window closes, PyPI
 > releases are published as **pre-release** (`==0.2.0rc1` etc.), not `latest`.
@@ -96,7 +98,7 @@ design language across four repositories (READMEs link each other):
 ## Install
 
 ```bash
-pip install frt-agent-memory-ledger  # once published
+pip install agent-audit-memory  # once published
 # dev / from source:
 pip install -e .
 ```
