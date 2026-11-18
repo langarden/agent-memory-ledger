@@ -5,8 +5,12 @@
 > 写入锁、永久刚性规则，全部 **fail-closed（故障即拒绝）**。
 
 ```bash
-pip install agent-memory-ledger          # 零依赖，Python 3.9+
+pip install frt-agent-memory-ledger    # 零依赖，Python 3.9+
 ```
+
+> **PyPI 包名说明**：PyPI 上本包发布名为 `frt-agent-memory-ledger`（原名
+> `agent-memory-ledger` 在 PyPI 被无关项目占用；`frt-` 前缀与家族品牌一致）。
+> 仓库名、导入路径（`import aml`）、CLI 及一切其他内容均不变。
 
 > **发布策略**：外部种子用户验证窗口结束前，PyPI 以**预发布版**发布（`==0.2.0rc1` 等），
 > 不作为 `latest`。预发布版适合原型验证，**不建议**用于处理敏感数据。
@@ -102,7 +106,7 @@ pip install agent-memory-ledger          # 零依赖，Python 3.9+
 ## 安装与 5 行示例
 
 ```bash
-pip install agent-memory-ledger
+pip install frt-agent-memory-ledger
 # 或源码安装
 pip install -e .
 ```

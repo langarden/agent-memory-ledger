@@ -5,8 +5,13 @@
 > rigid rules, with a **fail-closed** posture.
 
 ```bash
-pip install agent-memory-ledger          # zero deps, Python 3.9+
+pip install frt-agent-memory-ledger    # zero deps, Python 3.9+
 ```
+
+> **PyPI name note**: on PyPI this package is published as
+> `frt-agent-memory-ledger` (the plain name `agent-memory-ledger` was taken on
+> PyPI by an unrelated project; the `frt-` prefix matches the family brand).
+> The repo, import path (`import aml`), CLI and everything else are unchanged.
 
 > **Release policy**: until a first external-user validation window closes, PyPI
 > releases are published as **pre-release** (`==0.2.0rc1` etc.), not `latest`.
@@ -91,7 +96,7 @@ design language across four repositories (READMEs link each other):
 ## Install
 
 ```bash
-pip install agent-memory-ledger   # once published
+pip install frt-agent-memory-ledger  # once published
 # dev / from source:
 pip install -e .
 ```
