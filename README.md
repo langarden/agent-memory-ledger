@@ -36,6 +36,26 @@ an **audit-grade memory** for agents that need to be accountable.
 | let agents write freely | **write locks** — subagents write `draft`, master promotes to `core` |
 | decay old knowledge | **hard rules** — permanent rigid rules never decay, archive, or filter |
 
+### The gap this fills
+
+Reliability failures are not edge cases — they are the top open pain points in
+popular agent-memory projects today. A representative sample from a widely-used
+open-source memory system's public issue tracker:
+
+- **A failed write leaves the receipt stuck and the memory body permanently lost**
+  (open bug, priority P1) — exactly what a write-ahead log + crash replay prevents.
+- **Shutdown races corrupt state** — jobs submit to a destroyed executor, a
+  scheduler writes to a closed log. A single append-only WAL with an atomic
+  commit boundary removes this class of failure.
+- **One mistyped character silently invalidates a whole candidate batch** —
+  silent-corruption failures that a hash-chained, offline-verifiable trail
+  surfaces immediately instead of propagating.
+
+These are reliability and verifiability problems, not "remember harder" problems.
+`agent-memory-ledger` is built so that **every write is logged before it lands,
+every record is hash-chained and offline-checkable, nothing is deleted silently,
+and no conflict is merged without a human** — the eight invariants below.
+
 ## Product family
 
 Part of the **Verifiable-agent family** — the same fail-closed, audit-trail

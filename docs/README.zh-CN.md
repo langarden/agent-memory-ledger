@@ -13,7 +13,7 @@ pip install agent-memory-ledger          # 零依赖，Python 3.9+
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
-![Tests](https://img.shields.io/badge/tests-63%20passed-green)
+![Tests](https://img.shields.io/badge/tests-65%20passed-green)
 ![Deps](https://img.shields.io/badge/runtime%20deps-0-green)
 ![Status](https://img.shields.io/badge/status-research%20prototype-orange)
 
@@ -34,6 +34,16 @@ pip install agent-memory-ledger          # 零依赖，Python 3.9+
 | 覆盖冲突值 | **冲突台账**：冲突显性化交给人工终审，绝不静默合并 |
 | 任意写入 | **写入锁**：子 Agent 只写 `draft`，主控终审入 `core` |
 | 记忆衰减 | **hard_rule**：永久刚性规则永不被衰减/归档/过滤 |
+
+### 它补的缺口
+
+可靠性失败不是边缘案例——它们正是当下主流智能体记忆项目最靠前的公开痛点。以下选自某广泛使用的开源记忆系统公开 issue 区的真实代表样本：
+
+- **写失败后回执卡死、记忆正文永久丢失**（open bug，P1）——正是「先 WAL 后提交 + 崩溃重放」要防的。
+- **关停竞态破坏状态**——任务向已销毁执行器提交、调度器向已关闭日志写。单一「追加式 WAL + 原子提交边界」消除这一整类失败。
+- **一个抄写错误的字符让整批候选静默失效**——静默损坏类失败，靠「哈希链 + 离线可验证留痕」能立刻暴露，而不是继续扩散。
+
+这些是**可靠性与可验证性**问题，不是"更用力记"的问题。`agent-memory-ledger` 的设计保证：**每次写入先落日志再生效、每条记录哈希链离线可查、没有静默删除、没有冲突未经人工就合并**——即下方 8 条不变量。
 
 ## 产品家族
 
