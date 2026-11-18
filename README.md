@@ -221,3 +221,50 @@ aml/
 - [docs/AIGC_DISCLOSURE.md](docs/AIGC_DISCLOSURE.md) — AI-assisted development
   disclosure.
 - [LICENSE](LICENSE) — MIT, `agent-memory-ledger maintainers`.
+
+## Commercial services
+
+This library is open source (MIT) so that high-assurance agent teams can
+**review the audit foundation themselves** — inspect the WAL, the hash chain,
+the erasure certificates, verify the math, run the tests. The code is yours to
+prototype, fork and integrate.
+
+For teams deploying audited agent memory in regulated settings (EU AI Act
+high-risk systems, GDPR Article 17 deletion evidence, financial/insurance
+workflows), we offer commercial services **around** the open core:
+
+- **Integration consulting** — LangGraph / LangChain production wiring, audit
+  trace plumbing, retention & erasure policy design.
+- **Compliance enablement** — turn `docs/compliance.md` into a customer-ready
+  self-assessment kit, audit-evidence export pipelines, erasure-certificate
+  archiving.
+- **Enterprise edition (add-on, closed-source)** — multi-writer coordination,
+  RBAC read access, audit-event push, central certificate archive, monitoring
+  console, object-storage adapters, support SLA (subscription).
+- **Custom development & support** — regional regulatory adaptation (LGPD,
+  CN data rules), custom sanitization integration, annual support with
+  prioritized fixes and security patches.
+
+The open-core trust invariants (verification, erasure certificates, ordering)
+stay **fully open forever**. Commercial value is in operations, scale,
+permissions, consoles and service — not in hiding the trust logic.
+
+**Who we serve (client fit, by design):**
+- Teams that are **already committed** to EU AI Act / GDPR high-risk agents
+  (not curiosity explorers);
+- Teams that already have a technical lead and a compliance owner in-house
+  (we don't teach GDPR from zero);
+- Teams that have **run the open-source POC first** and confirmed the fit to
+  their stack (LangGraph-first);
+- We deliberately serve **only a small number of high-value reference
+  customers** — depth over breadth, and we'd rather send you back to the
+  community to self-serve than take on undifferentiated small custom work.
+
+**Scope boundaries (so you know what commercial service does NOT include):**
+- No 7×24 incident on-call, no on-site staffing, no unlimited requirement
+  churn; change requests are scoped and billed separately.
+- This library is a **technical substrate**, not a compliance certificate and
+  not a legal forensics tool; final regulatory responsibility stays with the
+  deploying organization.
+
+Questions / commercial inquiries: `2307788504@qq.com`
