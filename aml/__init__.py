@@ -13,6 +13,10 @@ Invariants (fail-closed):
   7. Zero sensitive payload persistence: only hashes / sanitized values.
   8. Conflicts are surfaced in a ledger for human resolution, never merged
      silently.
+  9. Single-writer enforcement: an exclusive cross-process lock guards each
+     storage directory (fail-closed multi-process contention).
+ 10. Provable erasure: purge writes an erasure certificate (digest only) and
+     removes plaintext (GDPR Art.17 spot).
 
 Research prototype / AI-assisted development. MIT licensed.
 """
@@ -26,6 +30,7 @@ from .lock import WriteLock, assert_core_write
 from .hardrules import HardRules
 from .search import MemorySearch
 from .security import digest, sanitize, backup_dir, AuditLog
+from .util import FileLock, ProcessContentionError, atomic_write
 
 __all__ = [
     "WalLog",
@@ -43,6 +48,9 @@ __all__ = [
     "sanitize",
     "backup_dir",
     "AuditLog",
+    "FileLock",
+    "ProcessContentionError",
+    "atomic_write",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

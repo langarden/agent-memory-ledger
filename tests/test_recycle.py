@@ -16,6 +16,7 @@ class RecycleBinTests(unittest.TestCase):
         self.bin = RecycleBin(self.store)
 
     def tearDown(self):
+        self.store.close()
         self.tmp.cleanup()
 
     def test_default_retention(self):
@@ -46,15 +47,26 @@ class RecycleBinTests(unittest.TestCase):
         self.store.put({"layer": "hot", "key": "k", "payload": "v"})
         self.bin.recycle("hot", "k")
         future = time.time() + 31 * 24 * 3600
-        purged = self.bin.purge_expired(now=future)
-        self.assertEqual(purged, ["k"])
+        certs = self.bin.purge_expired(now=future, erased_by="test")
+        # new contract: returns erasure certificates, not plain keys
+        self.assertEqual([c["key"] for c in certs], ["k"])
+        self.assertEqual(certs[0]["erased_by"], "test")
         self.assertEqual(self.bin.list_recycled(now=future), [])
+        # certificate persisted, plaintext gone
+        self.assertEqual(len(self.bin.read_certificates()), 1)
+        cert = self.bin.read_certificates()[0]
+        self.assertEqual(cert["key"], "k")
+        self.assertEqual(len(cert["payload_digest"]), 64)
+        # chain carries a purge marker
+        ok, _, total = self.store.chain.verify()
+        self.assertTrue(ok)
+        self.assertGreaterEqual(total, 2)
 
     def test_no_purge_before_expiry(self):
         self.store.put({"layer": "hot", "key": "k", "payload": "v"})
         self.bin.recycle("hot", "k")
-        purged = self.bin.purge_expired()
-        self.assertEqual(purged, [])
+        certs = self.bin.purge_expired()
+        self.assertEqual(certs, [])
         self.assertIn("k", self.store.records["recycle"])
 
     def test_recycle_writes_wal_and_chain(self):

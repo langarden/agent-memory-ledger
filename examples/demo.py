@@ -100,6 +100,9 @@ def main():
 
         print("search 'agents' ->", [r["key"] for r in search.retrieve("agents")])
 
+        # release the exclusive process lock before the temp dir is cleaned up
+        store.close()
+
 
 if __name__ == "__main__":
     main()

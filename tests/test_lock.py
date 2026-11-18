@@ -14,6 +14,7 @@ class WriteLockTests(unittest.TestCase):
         self.store = MemoryStore(self.base)
 
     def tearDown(self):
+        self.store.close()
         self.tmp.cleanup()
 
     def test_can_write_matrix(self):

@@ -10,7 +10,7 @@ pip install agent-memory-ledger          # zero deps, Python 3.9+
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
-![Tests](https://img.shields.io/badge/tests-65%20passed-green)
+![Tests](https://img.shields.io/badge/tests-79%20passed-green)
 ![Deps](https://img.shields.io/badge/runtime%20deps-0-green)
 ![Status](https://img.shields.io/badge/status-research%20prototype-orange)
 
@@ -38,23 +38,23 @@ an **audit-grade memory** for agents that need to be accountable.
 
 ### The gap this fills
 
-Reliability failures are not edge cases — they are the top open pain points in
-popular agent-memory projects today. A representative sample from a widely-used
-open-source memory system's public issue tracker:
+Reliability failures are not edge cases. Common failure modes across popular
+agent-memory stores include:
 
-- **A failed write leaves the receipt stuck and the memory body permanently lost**
-  (open bug, priority P1) — exactly what a write-ahead log + crash replay prevents.
-- **Shutdown races corrupt state** — jobs submit to a destroyed executor, a
-  scheduler writes to a closed log. A single append-only WAL with an atomic
-  commit boundary removes this class of failure.
-- **One mistyped character silently invalidates a whole candidate batch** —
+- **A failed write loses the memory body permanently** and leaves no way to
+  retry — exactly what a write-ahead log + crash replay prevents.
+- **Concurrent writers tear files / corrupt state** during shutdown or shared
+  use — a single append-only WAL with an exclusive writer lock removes this
+  class of failure.
+- **A single corrupted character silently invalidates a whole batch** —
   silent-corruption failures that a hash-chained, offline-verifiable trail
   surfaces immediately instead of propagating.
 
-These are reliability and verifiability problems, not "remember harder" problems.
-`agent-memory-ledger` is built so that **every write is logged before it lands,
-every record is hash-chained and offline-checkable, nothing is deleted silently,
-and no conflict is merged without a human** — the eight invariants below.
+These are **reliability and verifiability** problems, not "remember harder"
+problems. `agent-memory-ledger` is built so that **every write is logged before
+it lands, every record is hash-chained and offline-checkable, nothing is
+deleted silently, and no conflict is merged without a human** — the ten
+invariants below.
 
 ## Product family
 
@@ -115,32 +115,73 @@ Real output from `python examples/demo.py` (seven scenarios):
 | 6 | Write lock | subagents write `draft` only; master promotes to `core` |
 | 7 | Zero sensitive persistence | secrets are sanitized / stored as hashes only |
 | 8 | Conflicts surfaced | pending conflicts require human resolution; never merged silently |
+| 9 | Single-writer enforcement | exclusive cross-process lock per storage dir (fail-closed) |
+| 10 | Provable erasure | purge writes an erasure certificate (digest only), plaintext removed |
+
+**Durability** (`durability=` on `MemoryStore` / `WalLog`): `strict` fsyncs
+every append (power-loss safe, audit-grade), `normal` flushes per append
+(default), `fast` skips fsync (testing only).
+
+## Concurrency & capacity limits (current file backend)
+
+- **Single-process writer** per storage directory (enforced by an exclusive
+  lock — a second writer raises `ProcessContentionError` instead of corrupting
+  files). This is the **recommended** v0.2 posture: one agent process, one
+  directory. A shared SQLite backend for multi-process write is on the roadmap.
+- JSON file store is tuned for **≤ ~10k records per file**; above that, switch
+  to the planned SQLite backend (WAL mode, transactional, indexed).
+- Chain `verify()` is an O(n) linear pass — fine for ≤ ~100k entries; a
+  segmented/snapshot verifier is on the roadmap for larger sets.
+
+## Compliance note (read before citing regulations)
+
+This library provides the **technical substrate** for audit-grade memory —
+WAL, hash-chained trail, soft delete + provable erasure, write locks. It does
+**not** by itself make a system "GDPR / EU AI Act compliant": full compliance
+also requires retention policies, access control on read, operator
+procedures, and organisational processes. See `docs/compliance.md` and
+`RETAIN_ERASE_POLICY.md` for the current capability envelope. (Managed by
+expert review 2026-11.)
 
 ## Architecture
 
 ```
 aml/
 ├── wal.py        append-only write-ahead log + crash recovery
-├── chain.py      hash-chained audit trail, offline-verifiable
-├── store.py      layered store (draft / hot / core / archive)
-├── recycle.py    soft delete + 30-day retention + restore
+├── chain.py      hash-chained audit trail (LSN-ordered), offline-verifiable
+├── store.py      layered store (draft / hot / core / archive; namespace-isolated)
+├── recycle.py    soft delete + 30-day retention + provable erasure certificates
 ├── ledger.py     conflict ledger (pending -> human resolution)
 ├── lock.py       role-based write permission (fail-closed)
 ├── hardrules.py  permanent rigid rules (exempt from decay/archive)
 ├── search.py     layered retrieval (hard first + source receipt)
-└── security.py   digest / sanitize / backup / audit events
+├── security.py   digest / sanitize / backup / audit events
+└── util.py       atomic writes + exclusive cross-process file lock
 ```
 
 ## Roadmap ideas
 
-- MCP server binding (`memory.read` / `memory.write` tools)
-- Remote sync with a verifiable chain (append-only replication)
-- TTL tiers + decay policy runtime configuration
+- **v0.3 — audit-grade completeness** (per external expert review 2026-11):
+  content-level read access control; provenance chain (which prompt / tool
+  call produced a memory); configurable retention tiers + auto-archive; export
+  of an independent audit-event stream.
+- **Scalability**: SQLite backend (WAL mode, transactional, indexed) for
+  multi-process write and >10k-record stores; segmented/snapshot chain
+  verification for very large trails.
+- **Ecosystem**: LangGraph/LangChain `Checkpointer`-compatible binding (drop-in
+  audited storage plug-in); MCP server (`memory.read` / `memory.write`);
+  remote sync with a verifiable append-only chain.
 
-## Contributing / Security / License
+## Contributing / Security / License / AI disclosure
 
 - [CONTRIBUTING.md](CONTRIBUTING.md) — fail-closed first, no new deps,
   sanitized commits, green tests.
 - [SECURITY.md](SECURITY.md) — report privately; reference implementation,
-  not a hardened product.
+  not a hardened product; no third-party security audit yet.
+- [docs/compliance.md](docs/compliance.md) — capability envelope vs EU AI Act
+  / GDPR; [RETAIN_ERASE_POLICY.md](RETAIN_ERASE_POLICY.md) — retention &
+  provable-erasure policy; [docs/AUDIT_LOG_FORMAT.md](docs/AUDIT_LOG_FORMAT.md)
+  — log schema for third-party audit tooling.
+- [docs/AIGC_DISCLOSURE.md](docs/AIGC_DISCLOSURE.md) — AI-assisted development
+  disclosure.
 - [LICENSE](LICENSE) — MIT, `agent-memory-ledger maintainers`.

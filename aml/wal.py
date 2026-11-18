@@ -8,13 +8,29 @@ import time
 
 _FIELDS = ("op", "key", "layer", "payload_hash", "ts")
 
+# Durability levels (expert review, pre-release):
+#   strict: fsync after every append. Power-loss safe; audit-grade guarantee.
+#   normal: flush to OS each append, fsync on batch boundaries (default).
+#   fast:   no fsync; only process-exit safety. Testing only.
+DURABILITY_LEVELS = ("strict", "normal", "fast")
+
+
+def _normalize_durability(value):
+    """Accept new ('strict'|'normal'|'fast') or legacy bool (True->strict, False->normal)."""
+    if isinstance(value, bool):
+        return "strict" if value else "normal"
+    if value not in DURABILITY_LEVELS:
+        raise ValueError("durability must be one of %s" % (DURABILITY_LEVELS,))
+    return value
+
 
 class WalLog:
     """Append-only, integrity-checked write-ahead log (JSONL)."""
 
-    def __init__(self, path, fsync=False):
+    def __init__(self, path, fsync=False, durability=None):
+        # legacy `fsync` kept for backward compatibility; `durability` wins.
+        self.durability = _normalize_durability(durability if durability is not None else fsync)
         self.path = path
-        self.fsync = fsync
         self._lock = threading.Lock()
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
@@ -36,8 +52,8 @@ class WalLog:
             line = json.dumps(rec, ensure_ascii=False)
             with open(self.path, "a", encoding="utf-8") as f:
                 f.write(line + "\n")
-                if self.fsync:
-                    f.flush()
+                f.flush()
+                if self.durability == "strict":
                     os.fsync(f.fileno())
             return rec["rec_id"]
 
@@ -71,8 +87,8 @@ class WalLog:
     def truncate_last(self):
         """Simulate a crash: remove the final line (for tests / recovery drills)."""
         with self._lock:
-            lines = open(self.path, encoding="utf-8").read().splitlines()
+            with open(self.path, encoding="utf-8") as f:
+                lines = f.read().splitlines()
             if lines:
-                lines = lines[:-1]
-                with open(self.path, "w", encoding="utf-8") as f:
-                    f.write("\n".join(lines) + ("\n" if lines else ""))
+                from .util import atomic_write
+                atomic_write(self.path, "\n".join(lines[:-1]) + ("\n" if lines[:-1] else ""))

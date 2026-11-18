@@ -6,17 +6,42 @@ import time
 
 from .chain import HashChain
 from .security import digest, sanitize
+from .util import atomic_write, try_exclusive_lock
 from .wal import WalLog
 
 LAYERS = ("draft", "hot", "core", "archive")
 
 
 class MemoryStore:
-    """A small layered store. Every put goes through WAL then hash-chain."""
+    """A small layered store. Every put goes through WAL then hash-chain.
 
-    def __init__(self, base_dir, fsync=False):
+    Concurrency contract (expert review, pre-release):
+      * v0.2 enforces a **single-process writer** per storage directory via an
+        exclusive cross-process file lock (fail-closed). A second process
+        attempting to write raises ProcessContentionError instead of silently
+        corrupting files.
+      * Within one process, methods are thread-safe for reads; writes are
+        serialized by the WAL/chain locks.
+      * Pass `exclusive=False` only when you explicitly share the directory
+        from another trusted process (not recommended before SQLite backend).
+    """
+
+    def __init__(self, base_dir, fsync=False, durability=None, exclusive=True, namespace=None):
         self.base_dir = base_dir
+        self.namespace = namespace
         os.makedirs(base_dir, exist_ok=True)
+        if namespace:
+            # Physical isolation per tenant/session namespace (invariant #9).
+            base_dir = os.path.join(base_dir, "namespaces", namespace)
+            os.makedirs(base_dir, exist_ok=True)
+        self.base_dir = base_dir
+
+        self._exclusive_lock = None
+        if exclusive:
+            self._exclusive_lock = try_exclusive_lock(
+                os.path.join(self.base_dir, "aml.lock"), who="writer"
+            )
+
         self._dirs = {}
         for layer in LAYERS:
             d = os.path.join(base_dir, layer)
@@ -26,12 +51,32 @@ class MemoryStore:
         os.makedirs(os.path.join(base_dir, "wal"), exist_ok=True)
         os.makedirs(os.path.join(base_dir, "chain"), exist_ok=True)
 
-        self.wal = WalLog(os.path.join(base_dir, "wal", "wal.log"), fsync=fsync)
+        self.wal = WalLog(os.path.join(base_dir, "wal", "wal.log"), fsync=fsync, durability=durability)
         self.chain = HashChain(os.path.join(base_dir, "chain", "chain.jsonl"))
         self.records = {layer: self._load(layer) for layer in LAYERS}
         self.records["recycle"] = self._load("recycle")
 
-    # -- persistence helpers ------------------------------------------------
+    def close(self):
+        """Release the exclusive cross-process lock (if held). Safe to call twice."""
+        if self._exclusive_lock is not None:
+            try:
+                self._exclusive_lock.release()
+            finally:
+                self._exclusive_lock = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+        return False
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
     def _data_path(self, layer):
         return os.path.join(self.base_dir, layer, "data.json")
 
@@ -43,8 +88,10 @@ class MemoryStore:
             return json.load(f)
 
     def _persist(self, layer):
-        with open(self._data_path(layer), "w", encoding="utf-8") as f:
-            json.dump(self.records[layer], f, ensure_ascii=False, indent=2)
+        atomic_write(
+            self._data_path(layer),
+            json.dumps(self.records[layer], ensure_ascii=False, indent=2),
+        )
 
     # -- API -----------------------------------------------------------------
     def put(self, record, source="system"):

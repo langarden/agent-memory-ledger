@@ -6,11 +6,18 @@ import os
 import threading
 import time
 
+from .util import atomic_write
+
 GENESIS = "0" * 64
 
 
 class HashChain:
-    """Each record stores (index, payload, prev_hash, hash). verify() recomputes."""
+    """Each record stores (lsn, payload, prev_hash, hash). verify() recomputes.
+
+    Ordering is defined by the monotonically increasing `lsn` sequence, not by
+    wall-clock time. System clock changes (including rollback) cannot reorder
+    or break the chain because each link includes the previous hash.
+    """
 
     def __init__(self, path):
         self.path = path
@@ -39,8 +46,10 @@ class HashChain:
             prev = self._last_hash()
             ser = json.dumps(payload, sort_keys=True, ensure_ascii=False)
             digest = hashlib.sha256((ser + "|" + prev).encode("utf-8")).hexdigest()
+            lsn = self._count()
             rec = {
-                "index": self._count(),
+                "lsn": lsn,
+                "index": lsn,  # legacy alias, same value
                 "ts": time.time(),
                 "payload": payload,
                 "prev_hash": prev,
@@ -48,6 +57,7 @@ class HashChain:
             }
             with open(self.path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                f.flush()
             return rec
 
     def verify(self):
@@ -67,7 +77,12 @@ class HashChain:
                     return False, i, total
                 ser = json.dumps(rec["payload"], sort_keys=True, ensure_ascii=False)
                 digest = hashlib.sha256((ser + "|" + prev).encode("utf-8")).hexdigest()
-                if rec.get("prev_hash") != prev or rec.get("hash") != digest or rec.get("index") != i:
+                lsn = rec.get("lsn", rec.get("index"))
+                if (
+                    rec.get("prev_hash") != prev
+                    or rec.get("hash") != digest
+                    or lsn != i
+                ):
                     return False, i, total
                 prev = rec["hash"]
                 total = i + 1
@@ -81,5 +96,4 @@ class HashChain:
             rec = json.loads(lines[index])
             rec["payload"] = new_payload  # hash left stale -> verify must fail
             lines[index] = json.dumps(rec, ensure_ascii=False)
-            with open(self.path, "w", encoding="utf-8") as f:
-                f.write("\n".join(lines) + "\n")
+            atomic_write(self.path, "\n".join(lines) + "\n")

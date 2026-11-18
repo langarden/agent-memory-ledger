@@ -13,7 +13,7 @@ pip install agent-memory-ledger          # 零依赖，Python 3.9+
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
-![Tests](https://img.shields.io/badge/tests-65%20passed-green)
+![Tests](https://img.shields.io/badge/tests-79%20passed-green)
 ![Deps](https://img.shields.io/badge/runtime%20deps-0-green)
 ![Status](https://img.shields.io/badge/status-research%20prototype-orange)
 
@@ -37,13 +37,38 @@ pip install agent-memory-ledger          # 零依赖，Python 3.9+
 
 ### 它补的缺口
 
-可靠性失败不是边缘案例——它们正是当下主流智能体记忆项目最靠前的公开痛点。以下选自某广泛使用的开源记忆系统公开 issue 区的真实代表样本：
+可靠性失败不是边缘案例。主流智能体记忆存储中反复出现的共性故障包括：
 
-- **写失败后回执卡死、记忆正文永久丢失**（open bug，P1）——正是「先 WAL 后提交 + 崩溃重放」要防的。
-- **关停竞态破坏状态**——任务向已销毁执行器提交、调度器向已关闭日志写。单一「追加式 WAL + 原子提交边界」消除这一整类失败。
-- **一个抄写错误的字符让整批候选静默失效**——静默损坏类失败，靠「哈希链 + 离线可验证留痕」能立刻暴露，而不是继续扩散。
+- **写失败导致记忆正文永久丢失**，且无处重试——正是「先 WAL 后提交 + 崩溃重放」要防的。
+- **并发写入撕裂文件/破坏状态**（关停竞态、共享使用）——单一「追加式 WAL + 独占写入锁」消除这一整类失败。
+- **单个损坏字符让整批候选静默失效**——静默损坏类失败，靠「哈希链 + 离线可验证留痕」能立刻暴露，而不是继续扩散。
 
-这些是**可靠性与可验证性**问题，不是"更用力记"的问题。`agent-memory-ledger` 的设计保证：**每次写入先落日志再生效、每条记录哈希链离线可查、没有静默删除、没有冲突未经人工就合并**——即下方 8 条不变量。
+这些是**可靠性与可验证性**问题，不是"更用力记"的问题。`agent-memory-ledger` 的设计保证：**每次写入先落日志再生效、每条记录哈希链离线可查、没有静默删除、没有冲突未经人工就合并**——即下方 10 条不变量。
+
+## 不变量（10 条，外部可核）与持久化档位
+
+1. 先 WAL 后提交：任何变更先追加日志，崩溃可重放
+2. 写入三重校验：冲突 / 敏感 / 冗余 前置检查
+3. 删除=软删除：进回收站保留 30 天，可撤回
+4. 哈希链：`verify()` 重算全链，篡改必现
+5. hard_rule 永久豁免：不衰减、不归档、不过滤
+6. 写入锁：子级只能写 draft，主级终审入 core
+7. 零敏感落盘：密钥/token 只存哈希或脱敏值
+8. 冲突显性化：挂起等人工终审，绝不静默合并
+9. **单写者强制**：每个存储目录独占跨进程锁（fail-closed），多进程同写会被拒
+10. **可证明删除**：到期 purge 生成删除证书（仅含摘要、不含明文），明文物理清除
+
+**持久化档位**（`durability=`）：`strict` 每条写入强制 fsync（断电零丢失，审计级）· `normal` 每次 flush（默认）· `fast` 跳过 fsync（仅供测试）。
+
+## 并发与容量边界（当前文件后端）
+
+- 每个存储目录**单进程写入**（独占锁强制，第二写入者抛 `ProcessContentionError`，不会撕裂文件）。v0.2 推荐姿势：一个 Agent 进程一目录；多进程共享 SQLite 后端在路标上。
+- JSON 文件存储面向**单文件约 ≤1 万条**的记忆量；以上建议切未来 SQLite 后端（WAL 模式、事务化、可索引）。
+- 哈希链 `verify()` 为 O(n) 线性校验：≤ 约 10 万条记录以内够用；更大规模的分段/快照校验在路标上。
+
+## 合规说明（引用监管条文前请读）
+
+本库提供**审计级记忆的技术底座**——WAL、哈希链留痕、软删除+可证明删除、写入锁。它**本身不**使系统"GDPR / EU AI Act 合规"：完整合规还需保留期限策略、读取侧访问控制、操作人员流程与组织制度。详见 `docs/compliance.md` 与 `RETAIN_ERASE_POLICY.md` 的能力边界说明。（2026-11 专家评审后校准）
 
 ## 产品家族
 
@@ -72,17 +97,6 @@ store.put({"layer": "core", "key": "redline", "payload": "no leverage"})
 print(store.chain.verify())                        # (True, None, 1) 离线可验
 bin = RecycleBin(store); bin.recycle("core", "redline"); bin.restore("redline")
 ```
-
-## 8 条不变量（写进 README，外部可核）
-
-1. 先 WAL 后提交：任何变更先追加日志，崩溃可重放
-2. 写入三重校验：冲突 / 敏感 / 冗余 前置检查
-3. 删除=软删除：进回收站保留 30 天，可撤回
-4. 哈希链：`verify()` 重算全链，篡改必现
-5. hard_rule 永久豁免：不衰减、不归档、不过滤
-6. 写入锁：子级只能写 draft，主级终审入 core
-7. 零敏感落盘：密钥/token 只存哈希或脱敏值
-8. 冲突显性化：挂起等人工终审，绝不静默合并
 
 ## 安全与边界
 

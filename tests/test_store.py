@@ -13,6 +13,7 @@ class MemoryStoreTests(unittest.TestCase):
         self.store = MemoryStore(self.base)
 
     def tearDown(self):
+        self.store.close()
         self.tmp.cleanup()
 
     def test_layers(self):

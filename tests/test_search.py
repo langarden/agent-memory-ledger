@@ -17,6 +17,7 @@ class MemorySearchTests(unittest.TestCase):
         self.search = MemorySearch(self.store, self.rules)
 
     def tearDown(self):
+        self.store.close()
         self.tmp.cleanup()
 
     def test_hit(self):

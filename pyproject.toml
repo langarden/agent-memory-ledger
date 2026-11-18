@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-memory-ledger"
-version = "0.1.1"
-description = "A verifiable memory layer for AI agents: WAL, hash-chained trail, recycle bin, conflict ledger, write lock, hard rules (research prototype / AI-assisted development)."
+version = "0.2.0"
+description = "A verifiable memory layer for AI agents: WAL with fsync durability, hash-chained trail, recycle bin + provable erasure, conflict ledger, write lock, hard rules, single-writer process lock (research prototype / AI-assisted development)."
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
